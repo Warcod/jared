@@ -31,9 +31,9 @@ export const buildChargeSucceededSlackMessage = (payload: StripeChargePayload): 
   const mode = payload.livemode ? "live" : "test";
   const metadataLine = getMetadataLine(payload.metadata);
   const lines = [
-    "Nuevo pago recibido :coin:",
+    "Nuevo pago recibido :mario-coin:",
     "",
-    `Amount :dolar: : ${formatMoney(payload.amount, payload.currency)}`,
+    `Amount: ${formatMoney(payload.amount, payload.currency)}`,
   ];
 
   if (payload.paymentIntentId) {
