@@ -7,15 +7,16 @@ const config: AppConfig = {
   stripeWebhookSecret: "whsec_test",
   slackBotToken: "xoxb-test",
   slackChannelByEvent: {
-    "stripe.payment_succeeded": "C123",
+    "stripe.charge_succeeded": "C123",
   },
   logLevel: "info",
 };
 
 const event: JaredEvent = {
-  type: "stripe.payment_succeeded",
+  type: "stripe.charge_succeeded",
   payload: {
     amount: 4900,
+    chargeId: "ch_123",
     currency: "usd",
     customerId: "cus_123",
     customerEmail: undefined,
@@ -33,10 +34,10 @@ const event: JaredEvent = {
 
 describe("Jared event dispatch", () => {
   it("gets the Slack channel for an event", () => {
-    expect(getSlackChannelForEvent(config, "stripe.payment_succeeded")).toBe("C123");
+    expect(getSlackChannelForEvent(config, "stripe.charge_succeeded")).toBe("C123");
   });
 
-  it("posts payment messages to Slack", async () => {
+  it("posts charge messages to Slack", async () => {
     const slack = {
       postMessage: vi.fn().mockResolvedValue(undefined),
     };
@@ -45,7 +46,7 @@ describe("Jared event dispatch", () => {
 
     expect(slack.postMessage).toHaveBeenCalledWith({
       channel: "C123",
-      text: expect.stringContaining("New payment received"),
+      text: expect.stringContaining("New charge succeeded"),
     });
   });
 });

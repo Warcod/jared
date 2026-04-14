@@ -1,4 +1,4 @@
-import type { StripePaymentPayload } from "../events/types.js";
+import type { StripeChargePayload } from "../events/types.js";
 
 const formatMoney = (amountInMinorUnits: number, currency: string): string => {
   const normalizedCurrency = currency.toUpperCase();
@@ -26,19 +26,23 @@ const getMetadataLine = (metadata: Record<string, string>): string | undefined =
   return entries.map(([key, value]) => `${key}: ${value}`).join(" | ");
 };
 
-export const buildPaymentSucceededSlackMessage = (payload: StripePaymentPayload): string => {
+export const buildChargeSucceededSlackMessage = (payload: StripeChargePayload): string => {
   const customer = payload.customerEmail ?? payload.receiptEmail ?? payload.customerId ?? "Unknown";
   const mode = payload.livemode ? "live" : "test";
   const metadataLine = getMetadataLine(payload.metadata);
   const lines = [
-    "New payment received",
+    "New charge succeeded",
     "",
     `Amount: ${formatMoney(payload.amount, payload.currency)}`,
     `Customer: ${customer}`,
-    `PaymentIntent: ${payload.paymentIntentId}`,
+    `Charge: ${payload.chargeId}`,
     `Stripe event: ${payload.stripeEventId}`,
     `Mode: ${mode}`,
   ];
+
+  if (payload.paymentIntentId) {
+    lines.push(`PaymentIntent: ${payload.paymentIntentId}`);
+  }
 
   if (payload.description) {
     lines.push(`Description: ${payload.description}`);

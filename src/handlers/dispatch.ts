@@ -1,7 +1,7 @@
 import type { AppConfig } from "../config/env.js";
 import type { JaredEvent } from "../events/types.js";
 import type { SlackClient } from "../slack/client.js";
-import { buildPaymentSucceededSlackMessage } from "../slack/payment-message.js";
+import { buildChargeSucceededSlackMessage } from "../slack/payment-message.js";
 
 export const getSlackChannelForEvent = (config: AppConfig, eventType: JaredEvent["type"]): string => {
   const channel = config.slackChannelByEvent[eventType];
@@ -25,10 +25,10 @@ export const dispatchJaredEvent = async ({
   const channel = getSlackChannelForEvent(config, event.type);
 
   switch (event.type) {
-    case "stripe.payment_succeeded":
+    case "stripe.charge_succeeded":
       await slack.postMessage({
         channel,
-        text: buildPaymentSucceededSlackMessage(event.payload),
+        text: buildChargeSucceededSlackMessage(event.payload),
       });
       return;
   }

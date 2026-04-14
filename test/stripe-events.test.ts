@@ -2,20 +2,24 @@ import { describe, expect, it } from "vitest";
 import { parseStripeEvent, toJaredStripeEvent } from "../src/stripe/events.js";
 
 describe("Stripe event normalization", () => {
-  it("normalizes payment_intent.succeeded into a Jared event", () => {
+  it("normalizes charge.succeeded into a Jared event", () => {
     const stripeEvent = parseStripeEvent(
       Buffer.from(
         JSON.stringify({
           id: "evt_123",
-          type: "payment_intent.succeeded",
+          type: "charge.succeeded",
           created: 1_700_000_000,
           livemode: false,
           data: {
             object: {
-              id: "pi_123",
-              amount_received: 4900,
+              id: "ch_123",
+              amount: 4900,
               currency: "usd",
               customer: "cus_123",
+              billing_details: {
+                email: "buyer@example.com",
+              },
+              payment_intent: "pi_123",
               receipt_email: "buyer@example.com",
               metadata: {
                 organizationId: "org_123",
@@ -28,12 +32,13 @@ describe("Stripe event normalization", () => {
     );
 
     expect(toJaredStripeEvent(stripeEvent)).toEqual({
-      type: "stripe.payment_succeeded",
+      type: "stripe.charge_succeeded",
       payload: {
         amount: 4900,
+        chargeId: "ch_123",
         currency: "usd",
         customerId: "cus_123",
-        customerEmail: undefined,
+        customerEmail: "buyer@example.com",
         description: undefined,
         livemode: false,
         metadata: {
@@ -52,7 +57,7 @@ describe("Stripe event normalization", () => {
       Buffer.from(
         JSON.stringify({
           id: "evt_123",
-          type: "checkout.session.completed",
+          type: "payment_intent.succeeded",
           created: 1_700_000_000,
           livemode: false,
           data: { object: {} },

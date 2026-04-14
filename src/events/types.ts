@@ -1,19 +1,20 @@
-export type JaredEvent = StripePaymentSucceededEvent;
+export type JaredEvent = StripeChargeSucceededEvent;
 
-export type StripePaymentSucceededEvent = {
-  type: "stripe.payment_succeeded";
-  payload: StripePaymentPayload;
+export type StripeChargeSucceededEvent = {
+  type: "stripe.charge_succeeded";
+  payload: StripeChargePayload;
 };
 
-export type StripePaymentPayload = {
+export type StripeChargePayload = {
   amount: number;
+  chargeId: string;
   currency: string;
   customerId?: string;
   customerEmail?: string;
   description?: string;
   livemode: boolean;
   metadata: Record<string, string>;
-  paymentIntentId: string;
+  paymentIntentId?: string;
   receiptEmail?: string;
   stripeEventId: string;
   created: number;

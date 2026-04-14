@@ -1,4 +1,4 @@
-import type { StripePaymentSucceededEvent } from "../events/types.js";
+import type { StripeChargeSucceededEvent } from "../events/types.js";
 
 type StripeEvent = {
   id: string;
@@ -10,23 +10,18 @@ type StripeEvent = {
   };
 };
 
-type StripePaymentIntent = {
+type StripeCharge = {
   id?: unknown;
-  amount_received?: unknown;
   amount?: unknown;
+  billing_details?: {
+    email?: unknown;
+  };
   currency?: unknown;
   customer?: unknown;
-  receipt_email?: unknown;
   description?: unknown;
   metadata?: unknown;
-  charges?: {
-    data?: Array<{
-      billing_details?: {
-        email?: unknown;
-      };
-      receipt_email?: unknown;
-    }>;
-  };
+  payment_intent?: unknown;
+  receipt_email?: unknown;
 };
 
 export const parseStripeEvent = (payload: Buffer): StripeEvent => {
@@ -63,43 +58,38 @@ const asMetadata = (value: unknown): Record<string, string> => {
   );
 };
 
-const getChargeEmail = (paymentIntent: StripePaymentIntent): string | undefined => {
-  const charge = paymentIntent.charges?.data?.[0];
-
-  return asString(charge?.billing_details?.email) ?? asString(charge?.receipt_email);
-};
-
-export const toJaredStripeEvent = (event: StripeEvent): StripePaymentSucceededEvent | undefined => {
-  if (event.type !== "payment_intent.succeeded") {
+export const toJaredStripeEvent = (event: StripeEvent): StripeChargeSucceededEvent | undefined => {
+  if (event.type !== "charge.succeeded") {
     return undefined;
   }
 
-  const paymentIntent = event.data?.object as StripePaymentIntent | undefined;
+  const charge = event.data?.object as StripeCharge | undefined;
 
-  if (!paymentIntent || typeof paymentIntent !== "object") {
-    throw new Error("payment_intent.succeeded event is missing a payment intent object.");
+  if (!charge || typeof charge !== "object") {
+    throw new Error("charge.succeeded event is missing a charge object.");
   }
 
-  const paymentIntentId = asString(paymentIntent.id);
-  const amount = asNumber(paymentIntent.amount_received) ?? asNumber(paymentIntent.amount);
-  const currency = asString(paymentIntent.currency);
+  const chargeId = asString(charge.id);
+  const amount = asNumber(charge.amount);
+  const currency = asString(charge.currency);
 
-  if (!paymentIntentId || amount === undefined || !currency) {
-    throw new Error("payment_intent.succeeded event is missing required payment fields.");
+  if (!chargeId || amount === undefined || !currency) {
+    throw new Error("charge.succeeded event is missing required charge fields.");
   }
 
   return {
-    type: "stripe.payment_succeeded",
+    type: "stripe.charge_succeeded",
     payload: {
       amount,
+      chargeId,
       currency,
-      customerId: asString(paymentIntent.customer),
-      customerEmail: getChargeEmail(paymentIntent),
-      description: asString(paymentIntent.description),
+      customerId: asString(charge.customer),
+      customerEmail: asString(charge.billing_details?.email),
+      description: asString(charge.description),
       livemode: event.livemode,
-      metadata: asMetadata(paymentIntent.metadata),
-      paymentIntentId,
-      receiptEmail: asString(paymentIntent.receipt_email),
+      metadata: asMetadata(charge.metadata),
+      paymentIntentId: asString(charge.payment_intent),
+      receiptEmail: asString(charge.receipt_email),
       stripeEventId: event.id,
       created: event.created,
     },
