@@ -46,7 +46,7 @@ describe("Jared event dispatch", () => {
 
     expect(slack.postMessage).toHaveBeenCalledWith({
       channel: "C123",
-      text: expect.stringContaining("New charge succeeded"),
+      text: expect.stringContaining("Nuevo pago recibido"),
     });
   });
 });
