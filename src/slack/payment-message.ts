@@ -1,4 +1,4 @@
-import type { StripeChargePayload } from "../events/types.js";
+import type { StripeChargeFailedPayload, StripeChargePayload } from "../events/types.js";
 
 const formatMoney = (amountInMinorUnits: number, currency: string): string => {
   const normalizedCurrency = currency.toUpperCase();
@@ -42,6 +42,50 @@ export const buildChargeSucceededSlackMessage = (payload: StripeChargePayload): 
 
   if (payload.description) {
     lines.push(`Description: ${payload.description}`);
+  }
+
+  if (metadataLine) {
+    lines.push(`Metadata: ${metadataLine}`);
+  }
+
+  return lines.join("\n");
+};
+
+const getReasonLine = (payload: StripeChargeFailedPayload): string | undefined => {
+  if (payload.failureMessage && payload.failureCode) {
+    return `Reason: ${payload.failureMessage} (${payload.failureCode})`;
+  }
+
+  if (payload.failureMessage) {
+    return `Reason: ${payload.failureMessage}`;
+  }
+
+  if (payload.failureCode) {
+    return `Reason: ${payload.failureCode}`;
+  }
+
+  return undefined;
+};
+
+export const buildChargeFailedSlackMessage = (payload: StripeChargeFailedPayload): string => {
+  const metadataLine = getMetadataLine(payload.metadata);
+  const reasonLine = getReasonLine(payload);
+  const lines = [
+    "Pago fallido :x:",
+    "",
+    `Amount: ${formatMoney(payload.amount, payload.currency)}`,
+  ];
+
+  if (payload.paymentIntentId) {
+    lines.push(`PaymentIntent: ${payload.paymentIntentId}`);
+  }
+
+  if (payload.description) {
+    lines.push(`Description: ${payload.description}`);
+  }
+
+  if (reasonLine) {
+    lines.push(reasonLine);
   }
 
   if (metadataLine) {

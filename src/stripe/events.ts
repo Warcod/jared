@@ -1,4 +1,6 @@
-import type { StripeChargeSucceededEvent } from "../events/types.js";
+import type { StripeChargeFailedEvent, StripeChargeSucceededEvent } from "../events/types.js";
+
+type JaredStripeEvent = StripeChargeSucceededEvent | StripeChargeFailedEvent;
 
 type StripeEvent = {
   id: string;
@@ -19,6 +21,8 @@ type StripeCharge = {
   currency?: unknown;
   customer?: unknown;
   description?: unknown;
+  failure_code?: unknown;
+  failure_message?: unknown;
   metadata?: unknown;
   payment_intent?: unknown;
   receipt_email?: unknown;
@@ -58,15 +62,15 @@ const asMetadata = (value: unknown): Record<string, string> => {
   );
 };
 
-export const toJaredStripeEvent = (event: StripeEvent): StripeChargeSucceededEvent | undefined => {
-  if (event.type !== "charge.succeeded") {
+export const toJaredStripeEvent = (event: StripeEvent): JaredStripeEvent | undefined => {
+  if (event.type !== "charge.succeeded" && event.type !== "charge.failed") {
     return undefined;
   }
 
   const charge = event.data?.object as StripeCharge | undefined;
 
   if (!charge || typeof charge !== "object") {
-    throw new Error("charge.succeeded event is missing a charge object.");
+    throw new Error(`${event.type} event is missing a charge object.`);
   }
 
   const chargeId = asString(charge.id);
@@ -74,24 +78,37 @@ export const toJaredStripeEvent = (event: StripeEvent): StripeChargeSucceededEve
   const currency = asString(charge.currency);
 
   if (!chargeId || amount === undefined || !currency) {
-    throw new Error("charge.succeeded event is missing required charge fields.");
+    throw new Error(`${event.type} event is missing required charge fields.`);
+  }
+
+  const basePayload = {
+    amount,
+    chargeId,
+    currency,
+    customerId: asString(charge.customer),
+    customerEmail: asString(charge.billing_details?.email),
+    description: asString(charge.description),
+    livemode: event.livemode,
+    metadata: asMetadata(charge.metadata),
+    paymentIntentId: asString(charge.payment_intent),
+    receiptEmail: asString(charge.receipt_email),
+    stripeEventId: event.id,
+    created: event.created,
+  };
+
+  if (event.type === "charge.succeeded") {
+    return {
+      type: "stripe.charge_succeeded",
+      payload: basePayload,
+    };
   }
 
   return {
-    type: "stripe.charge_succeeded",
+    type: "stripe.charge_failed",
     payload: {
-      amount,
-      chargeId,
-      currency,
-      customerId: asString(charge.customer),
-      customerEmail: asString(charge.billing_details?.email),
-      description: asString(charge.description),
-      livemode: event.livemode,
-      metadata: asMetadata(charge.metadata),
-      paymentIntentId: asString(charge.payment_intent),
-      receiptEmail: asString(charge.receipt_email),
-      stripeEventId: event.id,
-      created: event.created,
+      ...basePayload,
+      failureCode: asString(charge.failure_code),
+      failureMessage: asString(charge.failure_message),
     },
   };
 };

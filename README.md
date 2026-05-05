@@ -10,7 +10,7 @@ Jared is Commet's Slack bot service. The first integration receives Stripe webho
 - `src/handlers`: event dispatch and Slack notification logic.
 - `src/slack`: Slack Web API client and message formatting.
 
-The first version intentionally has no database. Configure Stripe to send only `charge.succeeded` to avoid duplicated Slack messages from overlapping Stripe events.
+The first version intentionally has no database. Configure Stripe to send only `charge.succeeded` and `charge.failed` to avoid duplicated Slack messages from overlapping Stripe events.
 
 ## Environment
 
@@ -19,7 +19,7 @@ Copy `.env.example` into `.env.local` for local development:
 ```env
 STRIPE_WEBHOOK_SECRET=whsec_xxx
 SLACK_BOT_TOKEN=xoxb-xxx
-SLACK_CHANNEL_BY_EVENT={"stripe.charge_succeeded":"C0123456789"}
+SLACK_CHANNEL_BY_EVENT={"stripe.charge_succeeded":"C0123456789","stripe.charge_failed":"C0123456789"}
 LOG_LEVEL=info
 ```
 
@@ -37,6 +37,7 @@ Forward Stripe webhooks locally:
 ```bash
 stripe listen --forward-to http://localhost:3000/api/stripe/webhook
 stripe trigger charge.succeeded
+stripe trigger charge.failed
 ```
 
 ## Checks

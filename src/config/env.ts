@@ -35,7 +35,7 @@ const parseChannelMap = (raw: string): AppConfig["slackChannelByEvent"] => {
   const channelMap: AppConfig["slackChannelByEvent"] = {};
 
   for (const [eventType, channelId] of Object.entries(parsed)) {
-    if (eventType !== "stripe.charge_succeeded") {
+    if (eventType !== "stripe.charge_succeeded" && eventType !== "stripe.charge_failed") {
       throw new Error(`Unsupported event type in SLACK_CHANNEL_BY_EVENT: ${eventType}`);
     }
 

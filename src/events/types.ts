@@ -1,8 +1,13 @@
-export type JaredEvent = StripeChargeSucceededEvent;
+export type JaredEvent = StripeChargeSucceededEvent | StripeChargeFailedEvent;
 
 export type StripeChargeSucceededEvent = {
   type: "stripe.charge_succeeded";
   payload: StripeChargePayload;
+};
+
+export type StripeChargeFailedEvent = {
+  type: "stripe.charge_failed";
+  payload: StripeChargeFailedPayload;
 };
 
 export type StripeChargePayload = {
@@ -18,4 +23,9 @@ export type StripeChargePayload = {
   receiptEmail?: string;
   stripeEventId: string;
   created: number;
+};
+
+export type StripeChargeFailedPayload = StripeChargePayload & {
+  failureCode?: string;
+  failureMessage?: string;
 };
